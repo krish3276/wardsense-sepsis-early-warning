@@ -124,10 +124,7 @@ class VelocityAnalysisCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final concerningVelocities = result.concerningVelocities;
-
-    if (concerningVelocities.isEmpty && !result.hasSepsisVelocityPattern) {
-      return const SizedBox.shrink();
-    }
+    final hasConcerns = concerningVelocities.isNotEmpty || result.hasSepsisVelocityPattern;
 
     return Card(
       elevation: 0,
@@ -136,7 +133,9 @@ class VelocityAnalysisCard extends StatelessWidget {
         side: BorderSide(
           color: result.hasRapidDeterioration
               ? const Color(0xFFEF6C00)
-              : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+              : hasConcerns 
+                  ? const Color(0xFFF9A825)
+                  : Theme.of(context).colorScheme.outline.withOpacity(0.3),
           width: result.hasRapidDeterioration ? 2 : 1,
         ),
       ),
@@ -156,7 +155,9 @@ class VelocityAnalysisCard extends StatelessWidget {
                     size: 18,
                     color: result.hasRapidDeterioration
                         ? const Color(0xFFEF6C00)
-                        : Theme.of(context).colorScheme.primary,
+                        : hasConcerns
+                            ? const Color(0xFFF9A825)
+                            : Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -222,9 +223,43 @@ class VelocityAnalysisCard extends StatelessWidget {
               ],
 
               // Velocity rows
-              ...concerningVelocities.map(
-                (v) => _VelocityRow(velocity: v),
-              ),
+              if (concerningVelocities.isEmpty && !result.hasSepsisVelocityPattern) ...[
+                // Show stable state
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.green.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.check_circle_outline,
+                        size: 16,
+                        color: Colors.green,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'All vitals stable - no concerning rate of change detected',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.green.shade700,
+                                  ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else ...[
+                ...concerningVelocities.map(
+                  (v) => _VelocityRow(velocity: v),
+                ),
+              ],
 
               // Summary
               const SizedBox(height: 8),

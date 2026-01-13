@@ -127,7 +127,7 @@ class PatientDetailScreen extends ConsumerWidget {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: RiskProfileCard(
+              child: RiskProfileBadge(
                 riskProfile: patient.riskProfile,
                 showDetails: true,
               ),
@@ -868,6 +868,7 @@ class _VelocitySection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final velocityResult = ref.watch(patientVelocityProvider(patientId));
 
+    // Show if we have any velocity data (even stable)
     if (velocityResult == null) {
       return const SizedBox.shrink();
     }
@@ -875,14 +876,16 @@ class _VelocitySection extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: VelocityAnalysisCard(
-        analysisResult: velocityResult,
+        result: velocityResult,
         onTap: () {
-          showDialog(
-            context: context,
-            builder: (context) => VelocityDetailDialog(
-              analysisResult: velocityResult,
-            ),
-          );
+          if (velocityResult.concerningVelocities.isNotEmpty) {
+            showDialog(
+              context: context,
+              builder: (context) => VelocityDetailDialog(
+                velocity: velocityResult.concerningVelocities.first,
+              ),
+            );
+          }
         },
       ),
     );
@@ -911,16 +914,17 @@ class _EscalationPromptSection extends ConsumerWidget {
           // Mark prompt as acknowledged
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Escalation acknowledged at ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}'),
+              content: Text(
+                  'Escalation acknowledged at ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}'),
               backgroundColor: Colors.green,
             ),
           );
         },
-        onTakeAction: (action) {
-          // Handle specific action
+        onViewDetails: () {
+          // View more details
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Action initiated: ${action.label}'),
+            const SnackBar(
+              content: Text('Viewing escalation details...'),
               backgroundColor: Colors.blue,
             ),
           );

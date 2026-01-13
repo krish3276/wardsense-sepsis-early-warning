@@ -136,7 +136,7 @@ class PatientCard extends StatelessWidget {
                           const SizedBox(width: 8),
                           RiskProfileBadge(
                             riskProfile: patient.riskProfile,
-                            compact: true,
+                            showDetails: false,
                           ),
                         ],
                         if (patient.lastVitalsTime != null) ...[

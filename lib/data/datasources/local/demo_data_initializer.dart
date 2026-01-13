@@ -140,10 +140,10 @@ class DemoDataInitializer {
       lastVitalsTime: now.subtract(const Duration(minutes: 10)),
       isMonitored: true,
       isActive: true,
-      // Critical risk - Diabetes + Immunocompromised
+      // Critical risk - Diabetes + Immunosuppression
       comorbidityTypeIndices: [
         ComorbidityType.diabetesMellitus.index,
-        ComorbidityType.immunocompromised.index,
+        ComorbidityType.immunosuppression.index,
       ],
       comorbiditySeverityIndices: [2, 2], // both severe
     );
