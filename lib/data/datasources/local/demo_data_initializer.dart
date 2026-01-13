@@ -7,6 +7,7 @@ import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/risk_level.dart';
+import '../../../domain/entities/comorbidity.dart';
 import '../../models/patient_model.dart';
 import '../../models/vital_signs_model.dart';
 import '../../models/alert_model.dart';
@@ -71,7 +72,7 @@ class DemoDataInitializer {
 
     // ═══════════════════════════════════════════════════════════════════════
     // PATIENT 2: Needs monitoring (YELLOW)
-    // Slightly elevated heart rate and temperature
+    // Slightly elevated heart rate and temperature - has diabetes
     // ═══════════════════════════════════════════════════════════════════════
     final patient2Id = _uuid.v4();
     final patient2 = PatientModel(
@@ -86,13 +87,16 @@ class DemoDataInitializer {
       currentRiskLevelIndex: RiskLevel.yellow.index,
       lastVitalsTime: now.subtract(const Duration(minutes: 45)),
       isActive: true,
+      // Comorbidities for risk adjustment
+      comorbidityTypeIndices: [ComorbidityType.diabetesMellitus.index],
+      comorbiditySeverityIndices: [1], // moderate
     );
 
     final vitals2 = _generateYellowPatientVitals(patient2Id, now);
 
     // ═══════════════════════════════════════════════════════════════════════
     // PATIENT 3: Notify doctor (ORANGE)
-    // Rising heart rate, falling BP - concerning trend
+    // Rising heart rate, falling BP - has CKD and heart failure (HIGH RISK)
     // ═══════════════════════════════════════════════════════════════════════
     final patient3Id = _uuid.v4();
     final patient3 = PatientModel(
@@ -108,13 +112,19 @@ class DemoDataInitializer {
       lastVitalsTime: now.subtract(const Duration(minutes: 20)),
       isMonitored: true,
       isActive: true,
+      // Multiple comorbidities - HIGH RISK patient
+      comorbidityTypeIndices: [
+        ComorbidityType.chronicKidneyDisease.index,
+        ComorbidityType.heartFailure.index,
+      ],
+      comorbiditySeverityIndices: [2, 1], // severe CKD, moderate HF
     );
 
     final vitals3 = _generateOrangePatientVitals(patient3Id, now);
 
     // ═══════════════════════════════════════════════════════════════════════
     // PATIENT 4: High risk (RED)
-    // Classic sepsis pattern: HR↑, BP↓, RR↑, Temp↑
+    // Classic sepsis pattern: HR↑, BP↓, RR↑, Temp↑ - CRITICAL RISK PATIENT
     // ═══════════════════════════════════════════════════════════════════════
     final patient4Id = _uuid.v4();
     final patient4 = PatientModel(
@@ -130,12 +140,18 @@ class DemoDataInitializer {
       lastVitalsTime: now.subtract(const Duration(minutes: 10)),
       isMonitored: true,
       isActive: true,
+      // Critical risk - Diabetes + Immunocompromised
+      comorbidityTypeIndices: [
+        ComorbidityType.diabetesMellitus.index,
+        ComorbidityType.immunocompromised.index,
+      ],
+      comorbiditySeverityIndices: [2, 2], // both severe
     );
 
     final vitals4 = _generateRedPatientVitals(patient4Id, now);
 
     // ═══════════════════════════════════════════════════════════════════════
-    // PATIENT 5: Stable elderly patient
+    // PATIENT 5: Stable elderly patient with COPD
     // ═══════════════════════════════════════════════════════════════════════
     final patient5Id = _uuid.v4();
     final patient5 = PatientModel(
@@ -150,12 +166,15 @@ class DemoDataInitializer {
       currentRiskLevelIndex: RiskLevel.green.index,
       lastVitalsTime: now.subtract(const Duration(hours: 3)),
       isActive: true,
+      // Elderly with COPD - elevated risk but stable
+      comorbidityTypeIndices: [ComorbidityType.copd.index],
+      comorbiditySeverityIndices: [1], // moderate
     );
 
     final vitals5 = _generateStableVitals(patient5Id, now);
 
     // ═══════════════════════════════════════════════════════════════════════
-    // PATIENT 6: Post-surgery monitoring (YELLOW)
+    // PATIENT 6: Post-surgery monitoring (YELLOW) - Liver cirrhosis
     // ═══════════════════════════════════════════════════════════════════════
     final patient6Id = _uuid.v4();
     final patient6 = PatientModel(

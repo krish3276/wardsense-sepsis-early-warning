@@ -8,6 +8,7 @@ import '../../../core/constants/risk_level.dart';
 import '../../../core/utils/app_utils.dart';
 import '../../../domain/entities/patient.dart';
 import '../../../domain/entities/vital_signs.dart';
+import 'risk_profile_badge.dart';
 
 class PatientCard extends StatelessWidget {
   final Patient patient;
@@ -130,6 +131,14 @@ class PatientCard extends StatelessWidget {
                                     ).colorScheme.onSurfaceVariant,
                                   ),
                         ),
+                        // Risk Profile Badge - NEW FEATURE
+                        if (patient.comorbidities.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          RiskProfileBadge(
+                            riskProfile: patient.riskProfile,
+                            compact: true,
+                          ),
+                        ],
                         if (patient.lastVitalsTime != null) ...[
                           const SizedBox(width: 8),
                           Icon(

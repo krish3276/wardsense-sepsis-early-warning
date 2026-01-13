@@ -11,7 +11,15 @@ import '../../data/repositories/alert_repository.dart';
 import '../../domain/entities/patient.dart';
 import '../../domain/entities/vital_signs.dart';
 import '../../domain/entities/alert.dart';
+import '../../domain/entities/patient_risk_profile.dart';
+import '../../domain/entities/vital_velocity.dart';
+import '../../domain/entities/escalation_prompt.dart';
+import '../../domain/entities/escalation_safety_net.dart';
 import '../../domain/services/trend_analysis_engine.dart';
+import '../../domain/services/velocity_analysis_service.dart';
+import '../../domain/services/risk_adjustment_service.dart';
+import '../../domain/services/escalation_prompt_service.dart';
+import '../../domain/services/safety_net_service.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // USER ROLE PROVIDER
@@ -201,6 +209,116 @@ final dashboardStatsProvider = Provider<DashboardStats>((ref) {
     activeAlerts: activeAlerts.length,
     overdueVitals: overduePatients.length,
   );
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ADVANCED CLINICAL FEATURE PROVIDERS
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Note: Service providers are defined in their respective service files:
+// - velocityAnalysisServiceProvider in velocity_analysis_service.dart
+// - riskAdjustmentServiceProvider in risk_adjustment_service.dart
+// - escalationPromptServiceProvider in escalation_prompt_service.dart
+// - safetyNetServiceProvider in safety_net_service.dart
+
+/// Provider for velocity analysis for a specific patient
+final patientVelocityProvider =
+    Provider.family<VelocityAnalysisResult?, String>((ref, patientId) {
+  final velocityService = ref.watch(velocityAnalysisServiceProvider);
+  return velocityService.analyzeVelocity(patientId);
+});
+
+/// Provider for patient risk profile
+final patientRiskProfileProvider =
+    Provider.family<PatientRiskProfile, String>((ref, patientId) {
+  final patient = ref.watch(patientProvider(patientId));
+
+  if (patient == null) {
+    return PatientRiskProfile(
+      patientId: patientId,
+      age: 50, // Default age
+      comorbidities: const [],
+      lastUpdated: DateTime.now(),
+    );
+  }
+
+  // Return patient's risk profile (pre-computed)
+  return patient.riskProfile;
+});
+
+/// Provider for adjusted risk assessment for a patient
+final adjustedRiskAssessmentProvider =
+    Provider.family<AdjustedRiskResult?, String>((ref, patientId) {
+  final riskService = ref.watch(riskAdjustmentServiceProvider);
+  final riskProfile = ref.watch(patientRiskProfileProvider(patientId));
+  final vitals = ref.watch(vitalSignsProvider(patientId));
+
+  if (vitals.isEmpty) return null;
+  final latestVitals = vitals.first;
+
+  // Use the analysis provider to get NEWS score
+  final analysis = ref.watch(patientAnalysisProvider(patientId));
+
+  return riskService.calculateAdjustedRisk(
+    vitals: latestVitals,
+    riskProfile: riskProfile,
+    baseNewsScore: analysis.newsScore,
+  );
+});
+
+/// Provider for escalation prompts for a patient
+final patientEscalationPromptProvider =
+    Provider.family<EscalationPrompt?, String>((ref, patientId) {
+  final promptService = ref.watch(escalationPromptServiceProvider);
+  final riskProfile = ref.watch(patientRiskProfileProvider(patientId));
+  final vitals = ref.watch(vitalSignsProvider(patientId));
+
+  if (vitals.isEmpty) return null;
+  final latestVitals = vitals.first;
+  final analysis = ref.watch(patientAnalysisProvider(patientId));
+
+  return promptService.generatePrompt(
+    patientId: patientId,
+    currentVitals: latestVitals,
+    riskProfile: riskProfile,
+    newsScore: analysis.newsScore,
+  );
+});
+
+/// Provider for safety net status for a patient
+final patientSafetyNetProvider =
+    Provider.family<EscalationTracker?, String>((ref, patientId) {
+  final safetyNetService = ref.watch(safetyNetServiceProvider);
+  final alerts = ref.watch(patientAlertsProvider(patientId));
+
+  if (alerts.isEmpty) return null;
+  final latestAlert = alerts.first;
+
+  // Start tracking new high-priority alerts
+  if (latestAlert.riskLevel == RiskLevel.red ||
+      latestAlert.riskLevel == RiskLevel.orange) {
+    return safetyNetService.startTracking(
+      patientId: patientId,
+      alert: latestAlert,
+    );
+  }
+  return null;
+});
+
+/// Provider for overall safety net summary (uses provider defined in safety_net_service.dart)
+// Note: safetyNetSummaryProvider is already defined in safety_net_service.dart
+
+/// Provider for all overdue escalations (uses provider defined in safety_net_service.dart)
+// Note: overdueTrackersProvider is already defined in safety_net_service.dart
+
+/// Provider for pending escalations (not yet overdue)
+final pendingEscalationsProvider = Provider<List<EscalationTracker>>((ref) {
+  final safetyNetService = ref.watch(safetyNetServiceProvider);
+  final activeTrackers = safetyNetService.getActiveTrackers();
+  final overdueTrackers = safetyNetService.getOverdueTrackers();
+
+  // Pending = Active but not overdue
+  return activeTrackers.where((t) => !overdueTrackers.contains(t)).toList();
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

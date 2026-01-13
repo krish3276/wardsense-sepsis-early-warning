@@ -13,6 +13,10 @@ import '../../../domain/entities/vital_signs.dart';
 import '../../../domain/entities/alert.dart';
 import '../../../domain/services/trend_analysis_engine.dart';
 import '../../providers/providers.dart';
+import '../../widgets/risk_profile_badge.dart';
+import '../../widgets/velocity_display.dart';
+import '../../widgets/escalation_prompt_card.dart';
+import '../../widgets/safety_net_display.dart';
 import '../vitals/vital_entry_screen.dart';
 
 class PatientDetailScreen extends ConsumerWidget {
@@ -115,6 +119,40 @@ class PatientDetailScreen extends ConsumerWidget {
                 ),
               ),
             ),
+          ),
+
+          // ═══════════════════════════════════════════════════════════════════
+          // NEW FEATURE 1: Risk Profile Badge with Comorbidities
+          // ═══════════════════════════════════════════════════════════════════
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: RiskProfileCard(
+                riskProfile: patient.riskProfile,
+                showDetails: true,
+              ),
+            ),
+          ),
+
+          // ═══════════════════════════════════════════════════════════════════
+          // NEW FEATURE 2: Vital Trend Velocity Analysis
+          // ═══════════════════════════════════════════════════════════════════
+          SliverToBoxAdapter(
+            child: _VelocitySection(patientId: patientId),
+          ),
+
+          // ═══════════════════════════════════════════════════════════════════
+          // NEW FEATURE 3: Context-Aware Escalation Prompts
+          // ═══════════════════════════════════════════════════════════════════
+          SliverToBoxAdapter(
+            child: _EscalationPromptSection(patientId: patientId),
+          ),
+
+          // ═══════════════════════════════════════════════════════════════════
+          // NEW FEATURE 4: Safety Net Status
+          // ═══════════════════════════════════════════════════════════════════
+          SliverToBoxAdapter(
+            child: _SafetyNetSection(patientId: patientId),
           ),
 
           // Risk status card
@@ -813,5 +851,120 @@ class _VitalHistoryCard extends StatelessWidget {
     if (score >= 5) return RiskLevel.orange.color;
     if (score >= 3) return RiskLevel.yellow.color;
     return RiskLevel.green.color;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// NEW FEATURE SECTION WIDGETS
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Velocity Analysis Section - Shows vital trend velocity
+class _VelocitySection extends ConsumerWidget {
+  final String patientId;
+
+  const _VelocitySection({required this.patientId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final velocityResult = ref.watch(patientVelocityProvider(patientId));
+
+    if (velocityResult == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: VelocityAnalysisCard(
+        analysisResult: velocityResult,
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (context) => VelocityDetailDialog(
+              analysisResult: velocityResult,
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Escalation Prompt Section - Shows context-aware clinical prompts
+class _EscalationPromptSection extends ConsumerWidget {
+  final String patientId;
+
+  const _EscalationPromptSection({required this.patientId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final prompt = ref.watch(patientEscalationPromptProvider(patientId));
+
+    if (prompt == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: EscalationPromptCard(
+        prompt: prompt,
+        onAcknowledge: () {
+          // Mark prompt as acknowledged
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Escalation acknowledged at ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        },
+        onTakeAction: (action) {
+          // Handle specific action
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Action initiated: ${action.label}'),
+              backgroundColor: Colors.blue,
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Safety Net Section - Shows escalation tracking status
+class _SafetyNetSection extends ConsumerWidget {
+  final String patientId;
+
+  const _SafetyNetSection({required this.patientId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tracker = ref.watch(patientSafetyNetProvider(patientId));
+
+    if (tracker == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: EscalationTrackerCard(
+        tracker: tracker,
+        onAcknowledge: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Escalation acknowledged'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        },
+        onResolve: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Escalation resolved'),
+              backgroundColor: Colors.blue,
+            ),
+          );
+        },
+      ),
+    );
   }
 }

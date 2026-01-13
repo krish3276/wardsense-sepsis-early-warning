@@ -30,13 +30,17 @@ class PatientModelAdapter extends TypeAdapter<PatientModel> {
       isMonitored: fields[10] as bool,
       notes: fields[11] as String?,
       isActive: fields[12] as bool,
+      // Handle migration from old data without comorbidity fields
+      comorbidityTypeIndices: (fields[13] as List?)?.cast<int>() ?? const [],
+      comorbiditySeverityIndices:
+          (fields[14] as List?)?.cast<int>() ?? const [],
     );
   }
 
   @override
   void write(BinaryWriter writer, PatientModel obj) {
     writer
-      ..writeByte(13)
+      ..writeByte(15)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -62,7 +66,11 @@ class PatientModelAdapter extends TypeAdapter<PatientModel> {
       ..writeByte(11)
       ..write(obj.notes)
       ..writeByte(12)
-      ..write(obj.isActive);
+      ..write(obj.isActive)
+      ..writeByte(13)
+      ..write(obj.comorbidityTypeIndices)
+      ..writeByte(14)
+      ..write(obj.comorbiditySeverityIndices);
   }
 
   @override

@@ -5,6 +5,8 @@
 
 import 'package:equatable/equatable.dart';
 import '../../core/constants/risk_level.dart';
+import 'comorbidity.dart';
+import 'patient_risk_profile.dart';
 
 /// Patient entity
 ///
@@ -50,6 +52,9 @@ class Patient extends Equatable {
   /// Whether the patient is active (not discharged)
   final bool isActive;
 
+  /// Patient's comorbidities for risk adjustment
+  final List<Comorbidity> comorbidities;
+
   const Patient({
     required this.id,
     required this.bedId,
@@ -64,6 +69,7 @@ class Patient extends Equatable {
     this.isMonitored = false,
     this.notes,
     this.isActive = true,
+    this.comorbidities = const [],
   });
 
   /// Create a copy with updated fields
@@ -81,6 +87,7 @@ class Patient extends Equatable {
     bool? isMonitored,
     String? notes,
     bool? isActive,
+    List<Comorbidity>? comorbidities,
   }) {
     return Patient(
       id: id ?? this.id,
@@ -96,7 +103,36 @@ class Patient extends Equatable {
       isMonitored: isMonitored ?? this.isMonitored,
       notes: notes ?? this.notes,
       isActive: isActive ?? this.isActive,
+      comorbidities: comorbidities ?? this.comorbidities,
     );
+  }
+
+  /// Get the patient's age-based risk category
+  AgeRiskCategory get ageRiskCategory {
+    if (age >= 75) return AgeRiskCategory.veryElderly;
+    if (age >= 65) return AgeRiskCategory.elderly;
+    if (age >= 45) return AgeRiskCategory.middleAged;
+    return AgeRiskCategory.youngAdult;
+  }
+
+  /// Generate a risk profile for this patient
+  PatientRiskProfile get riskProfile => PatientRiskProfile(
+        patientId: id,
+        age: age,
+        comorbidities: comorbidities,
+        lastUpdated: DateTime.now(),
+      );
+
+  /// Check if patient has any high-risk comorbidities
+  bool get hasHighRiskComorbidities => comorbidities.any((c) =>
+      c.type == ComorbidityType.immunosuppression ||
+      c.type == ComorbidityType.chronicKidneyDisease ||
+      c.type == ComorbidityType.liverCirrhosis);
+
+  /// Get display string for comorbidities
+  String get comorbiditiesDisplay {
+    if (comorbidities.isEmpty) return 'None documented';
+    return comorbidities.map((c) => c.type.shortCode).join(', ');
   }
 
   /// Get formatted display name (Last, First)
@@ -145,18 +181,19 @@ class Patient extends Equatable {
 
   @override
   List<Object?> get props => [
-    id,
-    bedId,
-    name,
-    age,
-    gender,
-    medicalRecordNumber,
-    admissionDate,
-    wardName,
-    currentRiskLevel,
-    lastVitalsTime,
-    isMonitored,
-    notes,
-    isActive,
-  ];
+        id,
+        bedId,
+        name,
+        age,
+        gender,
+        medicalRecordNumber,
+        admissionDate,
+        wardName,
+        currentRiskLevel,
+        lastVitalsTime,
+        isMonitored,
+        notes,
+        isActive,
+        comorbidities,
+      ];
 }
