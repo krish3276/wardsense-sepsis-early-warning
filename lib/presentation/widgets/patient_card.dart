@@ -99,7 +99,9 @@ class PatientCard extends StatelessWidget {
                           ),
                           child: Text(
                             patient.bedDisplay,
-                            style: Theme.of(context).textTheme.labelSmall
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
                                 ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -107,7 +109,9 @@ class PatientCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             patient.name,
-                            style: Theme.of(context).textTheme.titleSmall
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
                                 ?.copyWith(fontWeight: FontWeight.w600),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -119,12 +123,12 @@ class PatientCard extends StatelessWidget {
                       children: [
                         Text(
                           '${patient.age}y • ${patient.gender}',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
                         ),
                         if (patient.lastVitalsTime != null) ...[
                           const SizedBox(width: 8),
@@ -137,13 +141,14 @@ class PatientCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 2),
                           Text(
-                            AppUtils.formatRelativeTime(patient.lastVitalsTime!),
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
+                            AppUtils.formatRelativeTime(
+                                patient.lastVitalsTime!),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
                           ),
                         ],
                       ],

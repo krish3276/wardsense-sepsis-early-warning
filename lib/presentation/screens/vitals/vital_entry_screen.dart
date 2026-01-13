@@ -483,9 +483,7 @@ class _VitalEntryScreenState extends ConsumerState<VitalEntryScreen> {
           .analyzePatient(_selectedPatient!.id);
 
       // Update patient risk level
-      await ref
-          .read(patientRepositoryProvider)
-          .updatePatientRiskLevel(
+      await ref.read(patientRepositoryProvider).updatePatientRiskLevel(
             _selectedPatient!.id,
             analysis.riskLevel,
             _selectedTime,

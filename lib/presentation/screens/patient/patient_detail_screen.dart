@@ -202,10 +202,11 @@ class _RiskStatusCard extends StatelessWidget {
                     children: [
                       Text(
                         'Risk Level: ${patient.currentRiskLevel.displayName}',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: patient.currentRiskLevel.color,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: patient.currentRiskLevel.color,
+                                ),
                       ),
                       if (patient.lastVitalsTime != null)
                         Text(
@@ -222,8 +223,8 @@ class _RiskStatusCard extends StatelessWidget {
               Text(
                 'Analysis Summary',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -272,8 +273,8 @@ class _LatestVitalsCard extends StatelessWidget {
                 Text(
                   'Latest Vitals',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 Text(
                   AppUtils.formatRelativeTime(vitals.timestamp),
@@ -372,8 +373,8 @@ class _VitalTile extends StatelessWidget {
           Text(
             value,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+                  fontWeight: FontWeight.bold,
+                ),
           ),
           Text(
             '$label $unit',
@@ -403,8 +404,8 @@ class _TrendChartsCard extends StatelessWidget {
             Text(
               'Vital Trends (Last ${vitals.length} readings)',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -445,8 +446,10 @@ class _TrendChartsCard extends StatelessWidget {
           },
         ),
         titlesData: FlTitlesData(
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -528,7 +531,8 @@ class _TrendChartsCard extends StatelessWidget {
           // Respiratory Rate (scaled up for visibility)
           LineChartBarData(
             spots: displayVitals.asMap().entries.map((e) {
-              return FlSpot(e.key.toDouble(), (e.value.respiratoryRate * 3).toDouble());
+              return FlSpot(
+                  e.key.toDouble(), (e.value.respiratoryRate * 3).toDouble());
             }).toList(),
             isCurved: true,
             color: Colors.teal,
@@ -603,9 +607,9 @@ class _EscalationGuidanceCard extends StatelessWidget {
                 Text(
                   'Escalation Guidance',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: riskLevel.color,
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: riskLevel.color,
+                      ),
                 ),
               ],
             ),
@@ -613,15 +617,15 @@ class _EscalationGuidanceCard extends StatelessWidget {
             Text(
               riskLevel.clinicalAction,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
+                    fontWeight: FontWeight.w500,
+                  ),
             ),
             const Divider(height: 24),
             Text(
               'Recommended Actions:',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 8),
             ..._getRecommendedActions().map((action) {
@@ -630,7 +634,8 @@ class _EscalationGuidanceCard extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.check_circle_outline, size: 18, color: riskLevel.color),
+                    Icon(Icons.check_circle_outline,
+                        size: 18, color: riskLevel.color),
                     const SizedBox(width: 8),
                     Expanded(child: Text(action)),
                   ],
@@ -686,8 +691,8 @@ class _RecentAlertsCard extends StatelessWidget {
             Text(
               'Recent Alerts',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 12),
             ...alerts.map((alert) {
@@ -742,8 +747,8 @@ class _VitalHistoryCard extends StatelessWidget {
             Text(
               'Vital Signs History',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 12),
             if (vitals.isEmpty)
@@ -778,7 +783,8 @@ class _VitalHistoryCard extends StatelessWidget {
                       DataCell(Text('${v.spO2}')),
                       DataCell(
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
                             color: _getNewsColor(newsScore).withOpacity(0.2),
                             borderRadius: BorderRadius.circular(4),
