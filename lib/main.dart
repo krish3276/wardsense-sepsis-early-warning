@@ -39,8 +39,9 @@ Future<void> main() async {
   // Open required boxes
   await openHiveBoxes();
 
-  // Initialize demo data for hackathon presentation
-  await DemoDataInitializer.initializeIfEmpty();
+  // Force reinitialize demo data to include NEWS scores
+  // TODO: Remove this line after first run to avoid data reset
+  await DemoDataInitializer.reinitialize();
 
   runApp(const ProviderScope(child: WardSenseApp()));
 }

@@ -459,8 +459,8 @@ class _VitalEntryScreenState extends ConsumerState<VitalEntryScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      // Create vital signs entity
-      final vitals = VitalSigns(
+      // Create vital signs entity (without NEWS score first to calculate it)
+      final vitalsWithoutScore = VitalSigns(
         id: _uuid.v4(),
         patientId: _selectedPatient!.id,
         heartRate: int.parse(_heartRateController.text),
@@ -473,6 +473,11 @@ class _VitalEntryScreenState extends ConsumerState<VitalEntryScreen> {
         createdAt: DateTime.now(),
         notes: _notesController.text.isNotEmpty ? _notesController.text : null,
       );
+
+      // Calculate NEWS score and create final vitals with score
+      final newsScore =
+          TrendAnalysisEngine.calculateNewsScore(vitalsWithoutScore);
+      final vitals = vitalsWithoutScore.copyWith(newsScore: newsScore);
 
       // Save vitals
       await ref.read(vitalSignsRepositoryProvider).addVitalSigns(vitals);

@@ -482,7 +482,14 @@ class TrendAnalysisEngine {
   // Based on Royal College of Physicians NEWS2 guidelines
   // ═══════════════════════════════════════════════════════════════════════════
 
-  int _calculateNewsScore(VitalSigns vitals) {
+  /// Public static method to calculate NEWS score for a VitalSigns entry.
+  /// This can be used when saving new vital signs to include the NEWS score.
+  ///
+  /// Returns an integer score from 0-20 based on NEWS2 guidelines:
+  /// - 0-4: Low risk
+  /// - 5-6: Medium risk (or 3 in any single parameter)
+  /// - 7+: High risk
+  static int calculateNewsScore(VitalSigns vitals) {
     int score = 0;
 
     // Respiratory rate scoring
@@ -551,6 +558,11 @@ class TrendAnalysisEngine {
     }
 
     return score;
+  }
+
+  /// Private instance method that delegates to the static method
+  int _calculateNewsScore(VitalSigns vitals) {
+    return TrendAnalysisEngine.calculateNewsScore(vitals);
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

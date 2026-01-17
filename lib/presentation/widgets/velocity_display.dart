@@ -124,7 +124,8 @@ class VelocityAnalysisCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final concerningVelocities = result.concerningVelocities;
-    final hasConcerns = concerningVelocities.isNotEmpty || result.hasSepsisVelocityPattern;
+    final hasConcerns =
+        concerningVelocities.isNotEmpty || result.hasSepsisVelocityPattern;
 
     return Card(
       elevation: 0,
@@ -133,7 +134,7 @@ class VelocityAnalysisCard extends StatelessWidget {
         side: BorderSide(
           color: result.hasRapidDeterioration
               ? const Color(0xFFEF6C00)
-              : hasConcerns 
+              : hasConcerns
                   ? const Color(0xFFF9A825)
                   : Theme.of(context).colorScheme.outline.withOpacity(0.3),
           width: result.hasRapidDeterioration ? 2 : 1,
@@ -223,7 +224,8 @@ class VelocityAnalysisCard extends StatelessWidget {
               ],
 
               // Velocity rows
-              if (concerningVelocities.isEmpty && !result.hasSepsisVelocityPattern) ...[
+              if (concerningVelocities.isEmpty &&
+                  !result.hasSepsisVelocityPattern) ...[
                 // Show stable state
                 Container(
                   padding: const EdgeInsets.all(8),

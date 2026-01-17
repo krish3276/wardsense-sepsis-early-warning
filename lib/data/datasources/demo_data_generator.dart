@@ -13,6 +13,7 @@ import '../../domain/entities/patient.dart';
 import '../../domain/entities/vital_signs.dart';
 import '../../domain/entities/comorbidity.dart';
 import '../../core/constants/risk_level.dart';
+import '../../domain/services/trend_analysis_engine.dart';
 
 /// Generator for demonstration data
 class DemoDataGenerator {
@@ -261,7 +262,8 @@ class DemoDataGenerator {
         oxygenSaturation = 97 - progress * 4; // 97 → 93
     }
 
-    return VitalSigns(
+    // Create vitals without NEWS score first
+    final vitalsWithoutScore = VitalSigns(
       id: 'vs-$patientId-${timestamp.millisecondsSinceEpoch}',
       patientId: patientId,
       timestamp: timestamp,
@@ -274,6 +276,11 @@ class DemoDataGenerator {
       spO2: oxygenSaturation.clamp(70, 100).round(),
       notes: _getConsciousnessForPattern(pattern, progress),
     );
+
+    // Calculate and add NEWS score
+    final newsScore =
+        TrendAnalysisEngine.calculateNewsScore(vitalsWithoutScore);
+    return vitalsWithoutScore.copyWith(newsScore: newsScore);
   }
 
   static String _getConsciousnessForPattern(

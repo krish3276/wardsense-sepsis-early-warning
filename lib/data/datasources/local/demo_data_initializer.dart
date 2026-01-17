@@ -8,9 +8,29 @@ import 'package:uuid/uuid.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/risk_level.dart';
 import '../../../domain/entities/comorbidity.dart';
+import '../../../domain/services/trend_analysis_engine.dart';
+import '../../../domain/entities/vital_signs.dart';
 import '../../models/patient_model.dart';
 import '../../models/vital_signs_model.dart';
 import '../../models/alert_model.dart';
+
+/// Helper function to calculate NEWS score for VitalSignsModel
+int _calculateNewsScoreForModel(VitalSignsModel model) {
+  // Create a temporary VitalSigns entity to use the static method
+  final tempVitals = VitalSigns(
+    id: model.id,
+    patientId: model.patientId,
+    heartRate: model.heartRate,
+    systolicBP: model.systolicBP,
+    diastolicBP: model.diastolicBP,
+    respiratoryRate: model.respiratoryRate,
+    temperature: model.temperature,
+    spO2: model.spO2,
+    timestamp: model.timestamp,
+    createdAt: model.createdAt,
+  );
+  return TrendAnalysisEngine.calculateNewsScore(tempVitals);
+}
 
 /// Initializes demo data for the application
 ///
@@ -231,18 +251,32 @@ class DemoDataInitializer {
     // Generate vitals for the last 12 hours (every 4 hours)
     for (int i = 0; i < 4; i++) {
       final timestamp = now.subtract(Duration(hours: i * 4 + 1));
+      final vitalWithoutScore = VitalSignsModel(
+        id: _uuid.v4(),
+        patientId: patientId,
+        heartRate: 72 + (i % 2 == 0 ? 2 : -2), // Minor variation
+        systolicBP: 120 + (i % 2 == 0 ? 3 : -3),
+        diastolicBP: 78 + (i % 2 == 0 ? 2 : -2),
+        respiratoryRate: 16,
+        temperature: 36.6 + (i * 0.1),
+        spO2: 98,
+        timestamp: timestamp,
+        createdAt: timestamp.add(const Duration(minutes: 2)),
+      );
+      // Add with calculated NEWS score
       vitals.add(
         VitalSignsModel(
-          id: _uuid.v4(),
-          patientId: patientId,
-          heartRate: 72 + (i % 2 == 0 ? 2 : -2), // Minor variation
-          systolicBP: 120 + (i % 2 == 0 ? 3 : -3),
-          diastolicBP: 78 + (i % 2 == 0 ? 2 : -2),
-          respiratoryRate: 16,
-          temperature: 36.6 + (i * 0.1),
-          spO2: 98,
-          timestamp: timestamp,
-          createdAt: timestamp.add(const Duration(minutes: 2)),
+          id: vitalWithoutScore.id,
+          patientId: vitalWithoutScore.patientId,
+          heartRate: vitalWithoutScore.heartRate,
+          systolicBP: vitalWithoutScore.systolicBP,
+          diastolicBP: vitalWithoutScore.diastolicBP,
+          respiratoryRate: vitalWithoutScore.respiratoryRate,
+          temperature: vitalWithoutScore.temperature,
+          spO2: vitalWithoutScore.spO2,
+          timestamp: vitalWithoutScore.timestamp,
+          createdAt: vitalWithoutScore.createdAt,
+          newsScore: _calculateNewsScoreForModel(vitalWithoutScore),
         ),
       );
     }
@@ -263,18 +297,32 @@ class DemoDataInitializer {
 
     for (int i = 0; i < 5; i++) {
       final timestamp = now.subtract(Duration(hours: i * 2 + 1));
+      final vitalWithoutScore = VitalSignsModel(
+        id: _uuid.v4(),
+        patientId: patientId,
+        heartRate: baseHR + (4 - i) * 3, // Rising trend (88 -> 100)
+        systolicBP: 118 - i * 2,
+        diastolicBP: 75 - i,
+        respiratoryRate: 18 + (4 - i), // Slightly elevated
+        temperature: baseTemp + (4 - i) * 0.15,
+        spO2: 96,
+        timestamp: timestamp,
+        createdAt: timestamp.add(const Duration(minutes: 2)),
+      );
+      // Add with calculated NEWS score
       vitals.add(
         VitalSignsModel(
-          id: _uuid.v4(),
-          patientId: patientId,
-          heartRate: baseHR + (4 - i) * 3, // Rising trend (88 -> 100)
-          systolicBP: 118 - i * 2,
-          diastolicBP: 75 - i,
-          respiratoryRate: 18 + (4 - i), // Slightly elevated
-          temperature: baseTemp + (4 - i) * 0.15,
-          spO2: 96,
-          timestamp: timestamp,
-          createdAt: timestamp.add(const Duration(minutes: 2)),
+          id: vitalWithoutScore.id,
+          patientId: vitalWithoutScore.patientId,
+          heartRate: vitalWithoutScore.heartRate,
+          systolicBP: vitalWithoutScore.systolicBP,
+          diastolicBP: vitalWithoutScore.diastolicBP,
+          respiratoryRate: vitalWithoutScore.respiratoryRate,
+          temperature: vitalWithoutScore.temperature,
+          spO2: vitalWithoutScore.spO2,
+          timestamp: vitalWithoutScore.timestamp,
+          createdAt: vitalWithoutScore.createdAt,
+          newsScore: _calculateNewsScoreForModel(vitalWithoutScore),
         ),
       );
     }
@@ -294,18 +342,32 @@ class DemoDataInitializer {
       final timestamp = now.subtract(Duration(hours: i * 2));
       final trendFactor = 5 - i; // 5, 4, 3, 2, 1, 0
 
+      final vitalWithoutScore = VitalSignsModel(
+        id: _uuid.v4(),
+        patientId: patientId,
+        heartRate: 95 + trendFactor * 5, // 95 -> 120
+        systolicBP: 115 - trendFactor * 5, // 115 -> 90
+        diastolicBP: 70 - trendFactor * 3,
+        respiratoryRate: 18 + trendFactor * 2, // 18 -> 28
+        temperature: 37.8 + trendFactor * 0.2,
+        spO2: 95 - trendFactor,
+        timestamp: timestamp,
+        createdAt: timestamp.add(const Duration(minutes: 3)),
+      );
+      // Add with calculated NEWS score
       vitals.add(
         VitalSignsModel(
-          id: _uuid.v4(),
-          patientId: patientId,
-          heartRate: 95 + trendFactor * 5, // 95 -> 120
-          systolicBP: 115 - trendFactor * 5, // 115 -> 90
-          diastolicBP: 70 - trendFactor * 3,
-          respiratoryRate: 18 + trendFactor * 2, // 18 -> 28
-          temperature: 37.8 + trendFactor * 0.2,
-          spO2: 95 - trendFactor,
-          timestamp: timestamp,
-          createdAt: timestamp.add(const Duration(minutes: 3)),
+          id: vitalWithoutScore.id,
+          patientId: vitalWithoutScore.patientId,
+          heartRate: vitalWithoutScore.heartRate,
+          systolicBP: vitalWithoutScore.systolicBP,
+          diastolicBP: vitalWithoutScore.diastolicBP,
+          respiratoryRate: vitalWithoutScore.respiratoryRate,
+          temperature: vitalWithoutScore.temperature,
+          spO2: vitalWithoutScore.spO2,
+          timestamp: vitalWithoutScore.timestamp,
+          createdAt: vitalWithoutScore.createdAt,
+          newsScore: _calculateNewsScoreForModel(vitalWithoutScore),
         ),
       );
     }
@@ -325,19 +387,34 @@ class DemoDataInitializer {
       final timestamp = now.subtract(Duration(hours: i * 1.5.toInt()));
       final trendFactor = 7 - i; // 7, 6, 5, 4, 3, 2, 1, 0
 
+      final vitalWithoutScore = VitalSignsModel(
+        id: _uuid.v4(),
+        patientId: patientId,
+        heartRate: 100 + trendFactor * 8, // 100 -> 156 (tachycardia)
+        systolicBP: 110 - trendFactor * 6, // 110 -> 68 (hypotension)
+        diastolicBP: 68 - trendFactor * 4,
+        respiratoryRate: 20 + trendFactor * 3, // 20 -> 41 (tachypnea)
+        temperature: 38.0 + trendFactor * 0.3, // 38 -> 40.1 (fever)
+        spO2: 96 - trendFactor * 2, // 96 -> 82
+        timestamp: timestamp,
+        createdAt: timestamp.add(const Duration(minutes: 1)),
+        notes: trendFactor >= 5 ? 'Concerning trend noted' : null,
+      );
+      // Add with calculated NEWS score
       vitals.add(
         VitalSignsModel(
-          id: _uuid.v4(),
-          patientId: patientId,
-          heartRate: 100 + trendFactor * 8, // 100 -> 156 (tachycardia)
-          systolicBP: 110 - trendFactor * 6, // 110 -> 68 (hypotension)
-          diastolicBP: 68 - trendFactor * 4,
-          respiratoryRate: 20 + trendFactor * 3, // 20 -> 41 (tachypnea)
-          temperature: 38.0 + trendFactor * 0.3, // 38 -> 40.1 (fever)
-          spO2: 96 - trendFactor * 2, // 96 -> 82
-          timestamp: timestamp,
-          createdAt: timestamp.add(const Duration(minutes: 1)),
-          notes: trendFactor >= 5 ? 'Concerning trend noted' : null,
+          id: vitalWithoutScore.id,
+          patientId: vitalWithoutScore.patientId,
+          heartRate: vitalWithoutScore.heartRate,
+          systolicBP: vitalWithoutScore.systolicBP,
+          diastolicBP: vitalWithoutScore.diastolicBP,
+          respiratoryRate: vitalWithoutScore.respiratoryRate,
+          temperature: vitalWithoutScore.temperature,
+          spO2: vitalWithoutScore.spO2,
+          timestamp: vitalWithoutScore.timestamp,
+          createdAt: vitalWithoutScore.createdAt,
+          notes: vitalWithoutScore.notes,
+          newsScore: _calculateNewsScoreForModel(vitalWithoutScore),
         ),
       );
     }
