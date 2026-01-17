@@ -6,6 +6,58 @@
 
 import 'package:equatable/equatable.dart';
 
+/// AVPU consciousness level scale
+/// Used in NEWS2 scoring for neurological assessment
+enum ConsciousnessLevel {
+  /// Alert - Patient is fully awake and responsive
+  alert,
+
+  /// Voice - Patient responds to verbal stimuli
+  voice,
+
+  /// Pain - Patient responds only to painful stimuli
+  pain,
+
+  /// Unresponsive - Patient does not respond to any stimuli
+  unresponsive,
+}
+
+/// Extension for ConsciousnessLevel display properties
+extension ConsciousnessLevelExtension on ConsciousnessLevel {
+  /// Display name for UI
+  String get displayName {
+    switch (this) {
+      case ConsciousnessLevel.alert:
+        return 'Alert';
+      case ConsciousnessLevel.voice:
+        return 'Voice';
+      case ConsciousnessLevel.pain:
+        return 'Pain';
+      case ConsciousnessLevel.unresponsive:
+        return 'Unresponsive';
+    }
+  }
+
+  /// Short code (A, V, P, U)
+  String get code {
+    switch (this) {
+      case ConsciousnessLevel.alert:
+        return 'A';
+      case ConsciousnessLevel.voice:
+        return 'V';
+      case ConsciousnessLevel.pain:
+        return 'P';
+      case ConsciousnessLevel.unresponsive:
+        return 'U';
+    }
+  }
+
+  /// NEWS2 score contribution (Alert = 0, others = 3)
+  int get newsScore {
+    return this == ConsciousnessLevel.alert ? 0 : 3;
+  }
+}
+
 /// Vital signs entity
 ///
 /// Represents a complete set of vital signs taken at a specific time.
@@ -34,6 +86,14 @@ class VitalSigns extends Equatable {
 
   /// Oxygen saturation percentage
   final int spO2;
+
+  /// Whether patient is on supplemental oxygen
+  /// Important for NEWS2 SpO2 scoring (Scale 1 vs Scale 2)
+  final bool isOnSupplementalOxygen;
+
+  /// Consciousness level using AVPU scale
+  /// A = Alert, V = Voice, P = Pain, U = Unresponsive
+  final ConsciousnessLevel consciousnessLevel;
 
   /// Timestamp when vitals were measured (not when entered)
   final DateTime timestamp;
@@ -64,6 +124,8 @@ class VitalSigns extends Equatable {
     required this.spO2,
     required this.timestamp,
     required this.createdAt,
+    this.isOnSupplementalOxygen = false,
+    this.consciousnessLevel = ConsciousnessLevel.alert,
     this.recordedBy,
     this.notes,
     this.isReviewed = false,
@@ -80,6 +142,8 @@ class VitalSigns extends Equatable {
     int? respiratoryRate,
     double? temperature,
     int? spO2,
+    bool? isOnSupplementalOxygen,
+    ConsciousnessLevel? consciousnessLevel,
     DateTime? timestamp,
     DateTime? createdAt,
     String? recordedBy,
@@ -96,6 +160,9 @@ class VitalSigns extends Equatable {
       respiratoryRate: respiratoryRate ?? this.respiratoryRate,
       temperature: temperature ?? this.temperature,
       spO2: spO2 ?? this.spO2,
+      isOnSupplementalOxygen:
+          isOnSupplementalOxygen ?? this.isOnSupplementalOxygen,
+      consciousnessLevel: consciousnessLevel ?? this.consciousnessLevel,
       timestamp: timestamp ?? this.timestamp,
       createdAt: createdAt ?? this.createdAt,
       recordedBy: recordedBy ?? this.recordedBy,
@@ -160,21 +227,33 @@ class VitalSigns extends Equatable {
     return count;
   }
 
+  /// Check if consciousness is abnormal (not Alert)
+  bool get isConsciousnessAbnormal =>
+      consciousnessLevel != ConsciousnessLevel.alert;
+
+  /// Consciousness level display
+  String get consciousnessDisplay => consciousnessLevel.displayName;
+
+  /// AVPU code display
+  String get avpuCode => consciousnessLevel.code;
+
   @override
   List<Object?> get props => [
-    id,
-    patientId,
-    heartRate,
-    systolicBP,
-    diastolicBP,
-    respiratoryRate,
-    temperature,
-    spO2,
-    timestamp,
-    createdAt,
-    recordedBy,
-    notes,
-    isReviewed,
-    newsScore,
-  ];
+        id,
+        patientId,
+        heartRate,
+        systolicBP,
+        diastolicBP,
+        respiratoryRate,
+        temperature,
+        spO2,
+        isOnSupplementalOxygen,
+        consciousnessLevel,
+        timestamp,
+        createdAt,
+        recordedBy,
+        notes,
+        isReviewed,
+        newsScore,
+      ];
 }

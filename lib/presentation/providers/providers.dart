@@ -288,9 +288,23 @@ final patientEscalationPromptProvider =
 /// Provider for safety net status for a patient
 final patientSafetyNetProvider =
     Provider.family<EscalationTracker?, String>((ref, patientId) {
-  final safetyNetService = ref.watch(safetyNetServiceProvider);
-  final alerts = ref.watch(patientAlertsProvider(patientId));
+  // Watch refresh notifiers to re-read tracker state after updates
+  ref.watch(refreshNotifierProvider);
+  ref.watch(safetyNetRefreshProvider);
 
+  final safetyNetService = ref.watch(safetyNetServiceProvider);
+
+  // First, check if there's an existing active tracker for this patient
+  final existingTrackers = safetyNetService.getTrackersForPatient(patientId);
+  final activeTracker = existingTrackers.where((t) => t.isActive).toList();
+  if (activeTracker.isNotEmpty) {
+    // Sort by most recent and return the latest
+    activeTracker.sort((a, b) => b.startedAt.compareTo(a.startedAt));
+    return activeTracker.first;
+  }
+
+  // No active tracker, check if we need to create one
+  final alerts = ref.watch(patientAlertsProvider(patientId));
   if (alerts.isEmpty) return null;
   final latestAlert = alerts.first;
 
@@ -319,6 +333,40 @@ final pendingEscalationsProvider = Provider<List<EscalationTracker>>((ref) {
 
   // Pending = Active but not overdue
   return activeTrackers.where((t) => !overdueTrackers.contains(t)).toList();
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ACKNOWLEDGED PROMPTS PROVIDER
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// State notifier for acknowledged escalation prompts
+class AcknowledgedPromptsNotifier extends StateNotifier<Set<String>> {
+  AcknowledgedPromptsNotifier() : super({});
+
+  void acknowledge(String patientId) {
+    state = {...state, patientId};
+  }
+
+  void clear(String patientId) {
+    state = state.where((id) => id != patientId).toSet();
+  }
+
+  bool isAcknowledged(String patientId) {
+    return state.contains(patientId);
+  }
+}
+
+/// Provider for acknowledged prompts state
+final acknowledgedPromptsProvider =
+    StateNotifierProvider<AcknowledgedPromptsNotifier, Set<String>>((ref) {
+  return AcknowledgedPromptsNotifier();
+});
+
+/// Provider to check if a specific patient's prompt is acknowledged
+final isPromptAcknowledgedProvider =
+    Provider.family<bool, String>((ref, patientId) {
+  final acknowledgedPrompts = ref.watch(acknowledgedPromptsProvider);
+  return acknowledgedPrompts.contains(patientId);
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

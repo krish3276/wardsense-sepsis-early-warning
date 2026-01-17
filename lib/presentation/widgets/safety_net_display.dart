@@ -538,8 +538,10 @@ class EscalationTrackerCard extends StatelessWidget {
             const Divider(height: 1),
             Padding(
               padding: const EdgeInsets.all(8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+              child: Wrap(
+                alignment: WrapAlignment.end,
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   if (tracker.acknowledgedAt == null) ...[
                     FilledButton.icon(
@@ -552,7 +554,6 @@ class EscalationTrackerCard extends StatelessWidget {
                       onPressed: onResolve,
                       child: const Text('Resolve'),
                     ),
-                    const SizedBox(width: 8),
                     FilledButton.icon(
                       onPressed: onRecordAction,
                       icon: const Icon(Icons.edit_note, size: 18),

@@ -26,6 +26,9 @@ int _calculateNewsScoreForModel(VitalSignsModel model) {
     respiratoryRate: model.respiratoryRate,
     temperature: model.temperature,
     spO2: model.spO2,
+    isOnSupplementalOxygen: model.isOnSupplementalOxygen,
+    consciousnessLevel:
+        ConsciousnessLevel.values[model.consciousnessLevelIndex],
     timestamp: model.timestamp,
     createdAt: model.createdAt,
   );

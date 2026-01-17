@@ -52,6 +52,12 @@ class VitalSignsModel extends HiveObject {
   @HiveField(13)
   final int? newsScore;
 
+  @HiveField(14)
+  final bool isOnSupplementalOxygen;
+
+  @HiveField(15)
+  final int consciousnessLevelIndex;
+
   VitalSignsModel({
     required this.id,
     required this.patientId,
@@ -67,6 +73,8 @@ class VitalSignsModel extends HiveObject {
     this.notes,
     this.isReviewed = false,
     this.newsScore,
+    this.isOnSupplementalOxygen = false,
+    this.consciousnessLevelIndex = 0, // Default to Alert
   });
 
   /// Convert from domain entity
@@ -86,6 +94,8 @@ class VitalSignsModel extends HiveObject {
       notes: vitals.notes,
       isReviewed: vitals.isReviewed,
       newsScore: vitals.newsScore,
+      isOnSupplementalOxygen: vitals.isOnSupplementalOxygen,
+      consciousnessLevelIndex: vitals.consciousnessLevel.index,
     );
   }
 
@@ -106,6 +116,8 @@ class VitalSignsModel extends HiveObject {
       notes: notes,
       isReviewed: isReviewed,
       newsScore: newsScore,
+      isOnSupplementalOxygen: isOnSupplementalOxygen,
+      consciousnessLevel: ConsciousnessLevel.values[consciousnessLevelIndex],
     );
   }
 }

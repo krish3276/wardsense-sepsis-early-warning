@@ -37,7 +37,7 @@ class RiskProfileBadge extends StatelessWidget {
     return GestureDetector(
       onTap: onTap ?? () => _showRiskExplanationDialog(context, riskProfile),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
         decoration: BoxDecoration(
           color: color.withOpacity(0.15),
           borderRadius: BorderRadius.circular(12),
@@ -46,49 +46,18 @@ class RiskProfileBadge extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.warning_amber_rounded, size: 14, color: color),
-            const SizedBox(width: 4),
+            Icon(Icons.warning_amber_rounded, size: 12, color: color),
+            const SizedBox(width: 3),
             Text(
               level.shortLabel,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
             ),
-            if (showDetails && riskProfile.comorbidityBadges.isNotEmpty) ...[
-              const SizedBox(width: 6),
-              ...riskProfile.comorbidityBadges.take(3).map(
-                    (badge) => Padding(
-                      padding: const EdgeInsets.only(right: 4),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 1,
-                        ),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          badge,
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                            color: color,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              if (riskProfile.comorbidityBadges.length > 3)
-                Text(
-                  '+${riskProfile.comorbidityBadges.length - 3}',
-                  style: TextStyle(fontSize: 9, color: color),
-                ),
-            ],
             const SizedBox(width: 2),
-            Icon(Icons.info_outline, size: 12, color: color.withOpacity(0.7)),
+            Icon(Icons.info_outline, size: 10, color: color.withOpacity(0.7)),
           ],
         ),
       ),

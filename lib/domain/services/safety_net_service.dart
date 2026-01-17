@@ -57,25 +57,31 @@ class _EscalationTrackerStore {
 /// Global store instance
 final _store = _EscalationTrackerStore();
 
+/// Safety net refresh notifier - increment to trigger provider rebuild
+final safetyNetRefreshProvider = StateProvider<int>((ref) => 0);
+
 /// Provider for the safety net service
 final safetyNetServiceProvider = Provider<SafetyNetService>((ref) {
-  return SafetyNetService();
+  return SafetyNetService(ref);
 });
 
 /// Provider for active escalation trackers
 final activeTrackersProvider = Provider<List<EscalationTracker>>((ref) {
+  ref.watch(safetyNetRefreshProvider); // Watch for refresh
   final service = ref.watch(safetyNetServiceProvider);
   return service.getActiveTrackers();
 });
 
 /// Provider for overdue escalation trackers
 final overdueTrackersProvider = Provider<List<EscalationTracker>>((ref) {
+  ref.watch(safetyNetRefreshProvider); // Watch for refresh
   final service = ref.watch(safetyNetServiceProvider);
   return service.getOverdueTrackers();
 });
 
 /// Provider for safety net summary
 final safetyNetSummaryProvider = Provider<SafetyNetSummary>((ref) {
+  ref.watch(safetyNetRefreshProvider); // Watch for refresh
   final service = ref.watch(safetyNetServiceProvider);
   return service.getSummary();
 });
@@ -83,6 +89,7 @@ final safetyNetSummaryProvider = Provider<SafetyNetSummary>((ref) {
 /// Provider for patient-specific tracker
 final patientTrackerProvider =
     Provider.family<EscalationTracker?, String>((ref, patientId) {
+  ref.watch(safetyNetRefreshProvider); // Watch for refresh
   final service = ref.watch(safetyNetServiceProvider);
   final trackers = service.getTrackersForPatient(patientId);
   // Return most recent active tracker
@@ -98,6 +105,21 @@ final patientTrackerProvider =
 /// Manages escalation tracking to ensure timely response to alerts.
 class SafetyNetService {
   static const _uuid = Uuid();
+  final Ref _ref;
+
+  SafetyNetService(this._ref);
+
+  /// Notify providers that data has changed
+  void _notifyChange() {
+    // Use Future.microtask to avoid modifying state during build
+    Future.microtask(() {
+      try {
+        _ref.read(safetyNetRefreshProvider.notifier).state++;
+      } catch (_) {
+        // Ignore if provider is not available
+      }
+    });
+  }
 
   /// Start tracking an alert for a patient
   ///
@@ -127,6 +149,7 @@ class SafetyNetService {
     );
 
     _store.add(tracker);
+    _notifyChange();
     return tracker;
   }
 
@@ -148,6 +171,7 @@ class SafetyNetService {
     );
 
     _store.update(updated);
+    _notifyChange();
     return updated;
   }
 
@@ -174,6 +198,7 @@ class SafetyNetService {
     );
 
     _store.update(updated);
+    _notifyChange();
     return updated;
   }
 
@@ -194,6 +219,7 @@ class SafetyNetService {
     );
 
     _store.update(updated);
+    _notifyChange();
     return updated;
   }
 
@@ -214,6 +240,7 @@ class SafetyNetService {
     );
 
     _store.update(updated);
+    _notifyChange();
     return updated;
   }
 

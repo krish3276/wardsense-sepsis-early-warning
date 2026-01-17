@@ -30,18 +30,32 @@ Future<void> main() async {
     DeviceOrientation.landscapeRight,
   ]);
 
-  // Initialize Hive for local storage (offline-first)
-  await Hive.initFlutter();
+  try {
+    // Initialize Hive for local storage (offline-first)
+    await Hive.initFlutter();
 
-  // Register Hive adapters for our models
-  registerHiveAdapters();
+    // Register Hive adapters for our models
+    registerHiveAdapters();
 
-  // Open required boxes
-  await openHiveBoxes();
+    // Open required boxes
+    await openHiveBoxes();
 
-  // Force reinitialize demo data to include NEWS scores
-  // TODO: Remove this line after first run to avoid data reset
-  await DemoDataInitializer.reinitialize();
+    // Initialize demo data if empty
+    await DemoDataInitializer.initializeIfEmpty();
+  } catch (e, stackTrace) {
+    debugPrint('Error during initialization: $e');
+    debugPrint('Stack trace: $stackTrace');
+    // Try to recover by deleting Hive data and reinitializing
+    try {
+      await Hive.deleteFromDisk();
+      await Hive.initFlutter();
+      registerHiveAdapters();
+      await openHiveBoxes();
+      await DemoDataInitializer.initializeIfEmpty();
+    } catch (e2) {
+      debugPrint('Recovery failed: $e2');
+    }
+  }
 
   runApp(const ProviderScope(child: WardSenseApp()));
 }

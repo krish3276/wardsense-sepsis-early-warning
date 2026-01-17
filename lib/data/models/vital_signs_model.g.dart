@@ -29,15 +29,22 @@ class VitalSignsModelAdapter extends TypeAdapter<VitalSignsModel> {
       createdAt: fields[9] as DateTime,
       recordedBy: fields[10] as String?,
       notes: fields[11] as String?,
-      isReviewed: fields[12] as bool,
+      isReviewed: fields.containsKey(12) && fields[12] != null
+          ? fields[12] as bool
+          : false,
       newsScore: fields[13] as int?,
+      isOnSupplementalOxygen: fields.containsKey(14) && fields[14] != null
+          ? fields[14] as bool
+          : false,
+      consciousnessLevelIndex:
+          fields.containsKey(15) && fields[15] != null ? fields[15] as int : 0,
     );
   }
 
   @override
   void write(BinaryWriter writer, VitalSignsModel obj) {
     writer
-      ..writeByte(14)
+      ..writeByte(16)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -65,7 +72,11 @@ class VitalSignsModelAdapter extends TypeAdapter<VitalSignsModel> {
       ..writeByte(12)
       ..write(obj.isReviewed)
       ..writeByte(13)
-      ..write(obj.newsScore);
+      ..write(obj.newsScore)
+      ..writeByte(14)
+      ..write(obj.isOnSupplementalOxygen)
+      ..writeByte(15)
+      ..write(obj.consciousnessLevelIndex);
   }
 
   @override

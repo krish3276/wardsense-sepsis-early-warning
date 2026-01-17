@@ -489,6 +489,15 @@ class TrendAnalysisEngine {
   /// - 0-4: Low risk
   /// - 5-6: Medium risk (or 3 in any single parameter)
   /// - 7+: High risk
+  ///
+  /// NEWS2 includes:
+  /// - Respiratory rate
+  /// - SpO2 (with Scale 1 for air, Scale 2 for supplemental O2)
+  /// - Supplemental oxygen (+2 if on oxygen)
+  /// - Systolic blood pressure
+  /// - Heart rate
+  /// - Temperature
+  /// - Consciousness level (AVPU)
   static int calculateNewsScore(VitalSigns vitals) {
     int score = 0;
 
@@ -505,15 +514,42 @@ class TrendAnalysisEngine {
       score += 3;
     }
 
-    // SpO2 scoring (Scale 1 - assuming no supplemental O2)
-    if (vitals.spO2 <= 91) {
-      score += 3;
-    } else if (vitals.spO2 <= 93) {
-      score += 2;
-    } else if (vitals.spO2 <= 95) {
-      score += 1;
+    // SpO2 scoring - NEWS2 uses different scales based on oxygen status
+    if (vitals.isOnSupplementalOxygen) {
+      // Scale 2: For patients with hypercapnic respiratory failure (on O2)
+      // More lenient thresholds when on supplemental oxygen
+      if (vitals.spO2 <= 83) {
+        score += 3;
+      } else if (vitals.spO2 <= 85) {
+        score += 2;
+      } else if (vitals.spO2 <= 87) {
+        score += 1;
+      } else if (vitals.spO2 <= 92) {
+        score += 0; // Target range for COPD patients
+      } else if (vitals.spO2 <= 94) {
+        score += 1;
+      } else if (vitals.spO2 <= 96) {
+        score += 2;
+      } else {
+        score += 3; // Too high on supplemental O2
+      }
     } else {
-      score += 0;
+      // Scale 1: Standard scale for patients on room air
+      if (vitals.spO2 <= 91) {
+        score += 3;
+      } else if (vitals.spO2 <= 93) {
+        score += 2;
+      } else if (vitals.spO2 <= 95) {
+        score += 1;
+      } else {
+        score += 0;
+      }
+    }
+
+    // Supplemental oxygen scoring
+    // +2 if patient is on any supplemental oxygen
+    if (vitals.isOnSupplementalOxygen) {
+      score += 2;
     }
 
     // Systolic BP scoring
@@ -556,6 +592,10 @@ class TrendAnalysisEngine {
     } else {
       score += 2;
     }
+
+    // Consciousness level (AVPU) scoring
+    // Alert = 0, Voice/Pain/Unresponsive = 3
+    score += vitals.consciousnessLevel.newsScore;
 
     return score;
   }

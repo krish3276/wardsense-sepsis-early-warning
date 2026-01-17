@@ -12,6 +12,7 @@ import '../../../domain/entities/patient.dart';
 import '../../../domain/entities/vital_signs.dart';
 import '../../../domain/entities/alert.dart';
 import '../../../domain/services/trend_analysis_engine.dart';
+import '../../../domain/services/safety_net_service.dart';
 import '../../providers/providers.dart';
 import '../../widgets/risk_profile_badge.dart';
 import '../../widgets/velocity_display.dart';
@@ -901,31 +902,42 @@ class _EscalationPromptSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final prompt = ref.watch(patientEscalationPromptProvider(patientId));
+    final isAcknowledged = ref.watch(isPromptAcknowledgedProvider(patientId));
 
-    if (prompt == null) {
+    if (prompt == null || isAcknowledged) {
       return const SizedBox.shrink();
+    }
+
+    void acknowledgePrompt() {
+      ref.read(acknowledgedPromptsProvider.notifier).acknowledge(patientId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Escalation acknowledged at ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}'),
+          backgroundColor: Colors.green,
+          action: SnackBarAction(
+            label: 'Undo',
+            textColor: Colors.white,
+            onPressed: () {
+              ref.read(acknowledgedPromptsProvider.notifier).clear(patientId);
+            },
+          ),
+        ),
+      );
     }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: EscalationPromptCard(
         prompt: prompt,
-        onAcknowledge: () {
-          // Mark prompt as acknowledged
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                  'Escalation acknowledged at ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        },
+        onAcknowledge: acknowledgePrompt,
         onViewDetails: () {
-          // View more details
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Viewing escalation details...'),
-              backgroundColor: Colors.blue,
+          // Show detailed escalation prompt dialog
+          showDialog(
+            context: context,
+            builder: (context) => EscalationPromptDetailDialog(
+              prompt: prompt,
+              onAcknowledge: acknowledgePrompt,
             ),
           );
         },
@@ -953,21 +965,128 @@ class _SafetyNetSection extends ConsumerWidget {
       child: EscalationTrackerCard(
         tracker: tracker,
         onAcknowledge: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Escalation acknowledged'),
-              backgroundColor: Colors.green,
-            ),
+          // Acknowledge the tracker using the safety net service
+          final safetyNetService = ref.read(safetyNetServiceProvider);
+          final updated = safetyNetService.acknowledge(
+            trackerId: tracker.id,
+            acknowledgedBy: 'Current User', // In a real app, get from auth
           );
+
+          if (updated != null) {
+            // Refresh data to reflect the change
+            refreshAllData(ref);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                    'Escalation acknowledged at ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        },
+        onRecordAction: () {
+          // Show dialog to record action
+          _showRecordActionDialog(context, ref, tracker.id);
         },
         onResolve: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Escalation resolved'),
-              backgroundColor: Colors.blue,
-            ),
+          // Resolve the tracker using the safety net service
+          final safetyNetService = ref.read(safetyNetServiceProvider);
+          final updated = safetyNetService.resolve(
+            trackerId: tracker.id,
+            resolutionNotes: 'Resolved via patient detail screen',
           );
+
+          if (updated != null) {
+            // Refresh data to reflect the change
+            refreshAllData(ref);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Escalation resolved successfully'),
+                backgroundColor: Colors.blue,
+              ),
+            );
+          }
         },
+      ),
+    );
+  }
+
+  void _showRecordActionDialog(
+      BuildContext context, WidgetRef ref, String trackerId) {
+    final actionController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.edit_note, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('Record Action'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Document the clinical action taken for this patient:',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: actionController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                hintText:
+                    'e.g., Administered IV fluids, called senior doctor, started antibiotics...',
+                border: OutlineInputBorder(),
+                labelText: 'Action Description',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              if (actionController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter an action description'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+                return;
+              }
+
+              final safetyNetService = ref.read(safetyNetServiceProvider);
+              final updated = safetyNetService.recordAction(
+                trackerId: trackerId,
+                actionTakenBy: 'Current User',
+                actionDescription: actionController.text.trim(),
+              );
+
+              Navigator.pop(context);
+
+              if (updated != null) {
+                refreshAllData(ref);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                        'Action documented: ${actionController.text.trim()}'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            },
+            icon: const Icon(Icons.save),
+            label: const Text('Save Action'),
+          ),
+        ],
       ),
     );
   }

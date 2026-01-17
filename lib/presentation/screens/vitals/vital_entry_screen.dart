@@ -43,6 +43,8 @@ class _VitalEntryScreenState extends ConsumerState<VitalEntryScreen> {
   Patient? _selectedPatient;
   DateTime _selectedTime = DateTime.now();
   bool _isSubmitting = false;
+  bool _isOnSupplementalOxygen = false;
+  ConsciousnessLevel _consciousnessLevel = ConsciousnessLevel.alert;
 
   @override
   void initState() {
@@ -206,6 +208,87 @@ class _VitalEntryScreenState extends ConsumerState<VitalEntryScreen> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 24),
+
+            // Supplemental Oxygen and Consciousness Level
+            Text(
+              'Additional Assessment',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+
+            // Supplemental Oxygen Switch
+            Card(
+              child: SwitchListTile(
+                title: const Text('Supplemental Oxygen'),
+                subtitle: Text(
+                  _isOnSupplementalOxygen
+                      ? 'Patient is receiving supplemental O₂'
+                      : 'Patient is on room air',
+                ),
+                secondary: Icon(
+                  _isOnSupplementalOxygen ? Icons.masks : Icons.air,
+                  color: _isOnSupplementalOxygen
+                      ? Theme.of(context).colorScheme.primary
+                      : null,
+                ),
+                value: _isOnSupplementalOxygen,
+                onChanged: (value) {
+                  setState(() => _isOnSupplementalOxygen = value);
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Consciousness Level (AVPU)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.psychology),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Consciousness Level (AVPU)',
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SegmentedButton<ConsciousnessLevel>(
+                      segments: ConsciousnessLevel.values.map((level) {
+                        return ButtonSegment<ConsciousnessLevel>(
+                          value: level,
+                          label: Text(level.code),
+                          tooltip: level.displayName,
+                        );
+                      }).toList(),
+                      selected: {_consciousnessLevel},
+                      onSelectionChanged: (Set<ConsciousnessLevel> selection) {
+                        setState(() {
+                          _consciousnessLevel = selection.first;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _getConsciousnessDescription(_consciousnessLevel),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: _consciousnessLevel !=
+                                    ConsciousnessLevel.alert
+                                ? Theme.of(context).colorScheme.error
+                                : Theme.of(context).textTheme.bodySmall?.color,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 24),
 
@@ -439,7 +522,22 @@ class _VitalEntryScreenState extends ConsumerState<VitalEntryScreen> {
     setState(() {
       _selectedPatient = null;
       _selectedTime = DateTime.now();
+      _isOnSupplementalOxygen = false;
+      _consciousnessLevel = ConsciousnessLevel.alert;
     });
+  }
+
+  String _getConsciousnessDescription(ConsciousnessLevel level) {
+    switch (level) {
+      case ConsciousnessLevel.alert:
+        return 'Patient is fully awake, eyes open spontaneously, responds appropriately';
+      case ConsciousnessLevel.voice:
+        return 'Patient responds when spoken to (eyes open, verbal response, or movement)';
+      case ConsciousnessLevel.pain:
+        return 'Patient responds only to painful stimuli (e.g., sternal rub)';
+      case ConsciousnessLevel.unresponsive:
+        return 'Patient does not respond to any stimuli - CRITICAL';
+    }
   }
 
   Future<void> _submitVitals() async {
@@ -469,6 +567,8 @@ class _VitalEntryScreenState extends ConsumerState<VitalEntryScreen> {
         respiratoryRate: int.parse(_respiratoryRateController.text),
         temperature: double.parse(_temperatureController.text),
         spO2: int.parse(_spo2Controller.text),
+        isOnSupplementalOxygen: _isOnSupplementalOxygen,
+        consciousnessLevel: _consciousnessLevel,
         timestamp: _selectedTime,
         createdAt: DateTime.now(),
         notes: _notesController.text.isNotEmpty ? _notesController.text : null,

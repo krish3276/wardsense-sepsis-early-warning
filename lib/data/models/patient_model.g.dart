@@ -30,10 +30,8 @@ class PatientModelAdapter extends TypeAdapter<PatientModel> {
       isMonitored: fields[10] as bool,
       notes: fields[11] as String?,
       isActive: fields[12] as bool,
-      // Handle migration from old data without comorbidity fields
-      comorbidityTypeIndices: (fields[13] as List?)?.cast<int>() ?? const [],
-      comorbiditySeverityIndices:
-          (fields[14] as List?)?.cast<int>() ?? const [],
+      comorbidityTypeIndices: (fields[13] as List).cast<int>(),
+      comorbiditySeverityIndices: (fields[14] as List).cast<int>(),
     );
   }
 

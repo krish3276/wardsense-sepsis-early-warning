@@ -120,7 +120,10 @@ class PatientCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Row(
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
                           '${patient.age}y • ${patient.gender}',
@@ -132,48 +135,56 @@ class PatientCard extends StatelessWidget {
                                   ),
                         ),
                         // Risk Profile Badge - NEW FEATURE
-                        if (patient.comorbidities.isNotEmpty) ...[
-                          const SizedBox(width: 8),
+                        if (patient.comorbidities.isNotEmpty)
                           RiskProfileBadge(
                             riskProfile: patient.riskProfile,
                             showDetails: false,
                           ),
-                        ],
-                        if (patient.lastVitalsTime != null) ...[
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.access_time,
-                            size: 12,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            AppUtils.formatRelativeTime(
-                                patient.lastVitalsTime!),
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                        if (patient.lastVitalsTime != null)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.access_time,
+                                size: 12,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                AppUtils.formatRelativeTime(
+                                    patient.lastVitalsTime!),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
                                       color: Theme.of(
                                         context,
                                       ).colorScheme.onSurfaceVariant,
                                     ),
+                              ),
+                            ],
                           ),
-                        ],
                       ],
                     ),
                   ],
                 ),
               ),
 
-              // Latest vitals summary
-              if (latestVitals != null) _VitalsSummary(vitals: latestVitals!),
+              // Latest vitals summary - only show if there's enough space
+              if (latestVitals != null)
+                Flexible(
+                  flex: 0,
+                  child: _VitalsSummary(vitals: latestVitals!),
+                ),
 
               // Arrow
-              const SizedBox(width: 8),
+              const SizedBox(width: 4),
               Icon(
                 Icons.chevron_right,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
+                size: 20,
               ),
             ],
           ),
@@ -191,7 +202,7 @@ class _VitalsSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: Theme.of(
           context,
@@ -200,41 +211,42 @@ class _VitalsSummary extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.favorite, size: 12, color: Colors.red.shade400),
+              Icon(Icons.favorite, size: 10, color: Colors.red.shade400),
               const SizedBox(width: 2),
               Text(
                 '${vitals.heartRate}',
-                style: Theme.of(context).textTheme.labelMedium,
+                style: Theme.of(context).textTheme.labelSmall,
               ),
-              const SizedBox(width: 8),
-              Icon(Icons.speed, size: 12, color: Colors.blue.shade400),
+              const SizedBox(width: 4),
+              Icon(Icons.speed, size: 10, color: Colors.blue.shade400),
               const SizedBox(width: 2),
               Text(
                 '${vitals.systolicBP}/${vitals.diastolicBP}',
-                style: Theme.of(context).textTheme.labelMedium,
+                style: Theme.of(context).textTheme.labelSmall,
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.thermostat, size: 12, color: Colors.orange.shade400),
+              Icon(Icons.thermostat, size: 10, color: Colors.orange.shade400),
               const SizedBox(width: 2),
               Text(
                 vitals.temperature.toStringAsFixed(1),
-                style: Theme.of(context).textTheme.labelMedium,
+                style: Theme.of(context).textTheme.labelSmall,
               ),
-              const SizedBox(width: 8),
-              Icon(Icons.air, size: 12, color: Colors.indigo.shade400),
+              const SizedBox(width: 4),
+              Icon(Icons.air, size: 10, color: Colors.indigo.shade400),
               const SizedBox(width: 2),
               Text(
                 '${vitals.spO2}%',
-                style: Theme.of(context).textTheme.labelMedium,
+                style: Theme.of(context).textTheme.labelSmall,
               ),
             ],
           ),

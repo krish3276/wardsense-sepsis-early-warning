@@ -54,13 +54,15 @@ extension EscalationTrackingStatusExtension on EscalationTrackingStatus {
 
   bool get requiresAttention =>
       this == EscalationTrackingStatus.pending ||
-      this == EscalationTrackingStatus.overdue;
+      this == EscalationTrackingStatus.overdue ||
+      this == EscalationTrackingStatus.acknowledged;
 
   bool get isOverdue => this == EscalationTrackingStatus.overdue;
 
   bool get isActive =>
       this == EscalationTrackingStatus.pending ||
-      this == EscalationTrackingStatus.overdue;
+      this == EscalationTrackingStatus.overdue ||
+      this == EscalationTrackingStatus.acknowledged;
 }
 
 /// Configuration for escalation timing
