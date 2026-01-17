@@ -11,6 +11,7 @@ import '../../../core/utils/app_utils.dart';
 import '../../../domain/entities/patient.dart';
 import '../../../domain/entities/vital_signs.dart';
 import '../../../domain/entities/alert.dart';
+import '../../../domain/entities/ai_prediction.dart';
 import '../../../domain/services/trend_analysis_engine.dart';
 import '../../../domain/services/safety_net_service.dart';
 import '../../providers/providers.dart';
@@ -18,6 +19,7 @@ import '../../widgets/risk_profile_badge.dart';
 import '../../widgets/velocity_display.dart';
 import '../../widgets/escalation_prompt_card.dart';
 import '../../widgets/safety_net_display.dart';
+import '../../widgets/ai_insights_card.dart';
 import '../vitals/vital_entry_screen.dart';
 
 class PatientDetailScreen extends ConsumerWidget {
@@ -133,6 +135,13 @@ class PatientDetailScreen extends ConsumerWidget {
                 showDetails: true,
               ),
             ),
+          ),
+
+          // ═══════════════════════════════════════════════════════════════════
+          // AI/ML SEPSIS PREDICTION - THE KILLER FEATURE
+          // ═══════════════════════════════════════════════════════════════════
+          SliverToBoxAdapter(
+            child: _AIInsightsSection(patientId: patientId),
           ),
 
           // ═══════════════════════════════════════════════════════════════════
@@ -852,6 +861,403 @@ class _VitalHistoryCard extends StatelessWidget {
     if (score >= 5) return RiskLevel.orange.color;
     if (score >= 3) return RiskLevel.yellow.color;
     return RiskLevel.green.color;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AI/ML SEPSIS PREDICTION SECTION - KILLER FEATURE
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// AI Insights Section - Shows ML-powered sepsis prediction
+class _AIInsightsSection extends ConsumerWidget {
+  final String patientId;
+
+  const _AIInsightsSection({required this.patientId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final prediction = ref.watch(sepsisPredictionProvider(patientId));
+
+    if (prediction == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: AIInsightsCard(
+        prediction: prediction,
+        onViewDetails: () {
+          _showAIDetailsDialog(context, ref, prediction);
+        },
+      ),
+    );
+  }
+
+  void _showAIDetailsDialog(
+    BuildContext context,
+    WidgetRef ref,
+    SepsisPrediction prediction,
+  ) {
+    final qsofa = ref.read(qsofaProvider(patientId));
+    final modelInfo = ref.read(aiModelInfoProvider);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              // Handle
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF1A237E), Color(0xFF7C4DFF)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.psychology,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'AI Analysis Details',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            'Powered by ${modelInfo.name}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(),
+              // Content
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    // Model info
+                    _buildModelInfoCard(context, modelInfo),
+                    const SizedBox(height: 16),
+                    // qSOFA details
+                    if (qsofa != null) ...[
+                      QSofaDisplay(qsofa: qsofa),
+                      const SizedBox(height: 16),
+                    ],
+                    // All risk factors
+                    _buildAllRiskFactors(context, prediction),
+                    const SizedBox(height: 16),
+                    // All anomalies
+                    if (prediction.anomalies.isNotEmpty)
+                      _buildAllAnomalies(context, prediction),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModelInfoCard(BuildContext context, AIModelInfo info) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.smart_toy, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Model Information',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildInfoRow(context, 'Model', info.name),
+            _buildInfoRow(context, 'Version', info.version),
+            _buildInfoRow(context, 'Type', info.type),
+            _buildInfoRow(
+              context,
+              'Accuracy',
+              '${(info.accuracy * 100).toStringAsFixed(1)}%',
+            ),
+            _buildInfoRow(
+              context,
+              'Sensitivity',
+              '${(info.sensitivity * 100).toStringAsFixed(1)}%',
+            ),
+            _buildInfoRow(
+              context,
+              'Specificity',
+              '${(info.specificity * 100).toStringAsFixed(1)}%',
+            ),
+            _buildInfoRow(
+              context,
+              'Training Data',
+              '${info.trainingDataSize.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} patients',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(BuildContext context, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAllRiskFactors(
+      BuildContext context, SepsisPrediction prediction) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.analytics, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'All Risk Factors',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...prediction.topRiskFactors.map((factor) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              factor.name,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: factor.isAbnormal
+                                  ? Colors.red.withOpacity(0.1)
+                                  : Colors.green.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              factor.currentValue,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: factor.isAbnormal
+                                    ? Colors.red
+                                    : Colors.green,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        factor.description,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(2),
+                        child: LinearProgressIndicator(
+                          value: factor.importance,
+                          backgroundColor: Colors.grey.shade200,
+                          valueColor: AlwaysStoppedAnimation(
+                            factor.importance >= 0.5
+                                ? Colors.red
+                                : Colors.orange,
+                          ),
+                          minHeight: 4,
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAllAnomalies(BuildContext context, SepsisPrediction prediction) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.warning_amber,
+                    size: 20, color: Colors.orange.shade700),
+                const SizedBox(width: 8),
+                Text(
+                  'Detected Anomalies',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...prediction.anomalies.map((anomaly) => Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: anomaly.severityColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: anomaly.severityColor.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        anomaly.type.icon,
+                        color: anomaly.severityColor,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              anomaly.vitalName,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              anomaly.description,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            Text(
+                              '${anomaly.type.displayName} • ${anomaly.trend}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    color: anomaly.severityColor,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: anomaly.severityColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${(anomaly.severity * 100).toStringAsFixed(0)}%',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+          ],
+        ),
+      ),
+    );
   }
 }
 

@@ -15,11 +15,13 @@ import '../../domain/entities/patient_risk_profile.dart';
 import '../../domain/entities/vital_velocity.dart';
 import '../../domain/entities/escalation_prompt.dart';
 import '../../domain/entities/escalation_safety_net.dart';
+import '../../domain/entities/ai_prediction.dart';
 import '../../domain/services/trend_analysis_engine.dart';
 import '../../domain/services/velocity_analysis_service.dart';
 import '../../domain/services/risk_adjustment_service.dart';
 import '../../domain/services/escalation_prompt_service.dart';
 import '../../domain/services/safety_net_service.dart';
+import '../../domain/services/sepsis_ai_service.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // USER ROLE PROVIDER
@@ -37,6 +39,8 @@ final userRoleProvider = StateProvider<UserRole>((ref) => UserRole.nurse);
 
 /// Provider for all patients sorted by risk
 final patientsProvider = Provider<List<Patient>>((ref) {
+  // Watch refresh notifier to react to data changes
+  ref.watch(refreshNotifierProvider);
   final repository = ref.watch(patientRepositoryProvider);
   return repository.getPatientsSortedByRisk();
 });
@@ -46,18 +50,24 @@ final patientsByRiskProvider = Provider.family<List<Patient>, RiskLevel>((
   ref,
   level,
 ) {
+  // Watch refresh notifier to react to data changes
+  ref.watch(refreshNotifierProvider);
   final repository = ref.watch(patientRepositoryProvider);
   return repository.getPatientsByRiskLevel(level);
 });
 
 /// Provider for risk level counts
 final riskLevelCountsProvider = Provider<Map<RiskLevel, int>>((ref) {
+  // Watch refresh notifier to react to data changes
+  ref.watch(refreshNotifierProvider);
   final repository = ref.watch(patientRepositoryProvider);
   return repository.getRiskLevelCounts();
 });
 
 /// Provider for a single patient
 final patientProvider = Provider.family<Patient?, String>((ref, patientId) {
+  // Watch refresh notifier to react to data changes
+  ref.watch(refreshNotifierProvider);
   final repository = ref.watch(patientRepositoryProvider);
   return repository.getPatientById(patientId);
 });
@@ -77,6 +87,8 @@ final patientSearchQueryProvider = StateProvider<String>((ref) => '');
 
 /// Provider for filtered patients based on search
 final filteredPatientsProvider = Provider<List<Patient>>((ref) {
+  // Watch refresh notifier to react to data changes
+  ref.watch(refreshNotifierProvider);
   final query = ref.watch(patientSearchQueryProvider);
   final repository = ref.watch(patientRepositoryProvider);
 
@@ -96,6 +108,8 @@ final vitalSignsProvider = Provider.family<List<VitalSigns>, String>((
   ref,
   patientId,
 ) {
+  // Watch refresh notifier to react to data changes
+  ref.watch(refreshNotifierProvider);
   final repository = ref.watch(vitalSignsRepositoryProvider);
   return repository.getVitalSignsForPatient(patientId);
 });
@@ -105,6 +119,8 @@ final latestVitalSignsProvider = Provider.family<VitalSigns?, String>((
   ref,
   patientId,
 ) {
+  // Watch refresh notifier to react to data changes
+  ref.watch(refreshNotifierProvider);
   final repository = ref.watch(vitalSignsRepositoryProvider);
   return repository.getLatestVitalSigns(patientId);
 });
@@ -114,6 +130,8 @@ final vitalSignsInWindowProvider = Provider.family<List<VitalSigns>, String>((
   ref,
   patientId,
 ) {
+  // Watch refresh notifier to react to data changes
+  ref.watch(refreshNotifierProvider);
   final repository = ref.watch(vitalSignsRepositoryProvider);
   return repository.getVitalSignsInWindow(patientId, 12);
 });
@@ -124,6 +142,8 @@ final vitalSignsInWindowProvider = Provider.family<List<VitalSigns>, String>((
 
 /// Provider for all active alerts
 final activeAlertsProvider = Provider<List<Alert>>((ref) {
+  // Watch refresh notifier to react to data changes
+  ref.watch(refreshNotifierProvider);
   final repository = ref.watch(alertRepositoryProvider);
   return repository.getActiveAlerts();
 });
@@ -133,6 +153,8 @@ final patientAlertsProvider = Provider.family<List<Alert>, String>((
   ref,
   patientId,
 ) {
+  // Watch refresh notifier to react to data changes
+  ref.watch(refreshNotifierProvider);
   final repository = ref.watch(alertRepositoryProvider);
   return repository.getAlertsForPatient(patientId);
 });
@@ -142,6 +164,8 @@ final activePatientAlertsProvider = Provider.family<List<Alert>, String>((
   ref,
   patientId,
 ) {
+  // Watch refresh notifier to react to data changes
+  ref.watch(refreshNotifierProvider);
   final repository = ref.watch(alertRepositoryProvider);
   return repository.getActiveAlertsForPatient(patientId);
 });
@@ -269,6 +293,8 @@ final adjustedRiskAssessmentProvider =
 /// Provider for escalation prompts for a patient
 final patientEscalationPromptProvider =
     Provider.family<EscalationPrompt?, String>((ref, patientId) {
+  // Watch refresh notifier to react to data changes
+  ref.watch(refreshNotifierProvider);
   final promptService = ref.watch(escalationPromptServiceProvider);
   final riskProfile = ref.watch(patientRiskProfileProvider(patientId));
   final vitals = ref.watch(vitalSignsProvider(patientId));
@@ -327,6 +353,8 @@ final patientSafetyNetProvider =
 
 /// Provider for pending escalations (not yet overdue)
 final pendingEscalationsProvider = Provider<List<EscalationTracker>>((ref) {
+  // Watch refresh notifier to react to data changes
+  ref.watch(refreshNotifierProvider);
   final safetyNetService = ref.watch(safetyNetServiceProvider);
   final activeTrackers = safetyNetService.getActiveTrackers();
   final overdueTrackers = safetyNetService.getOverdueTrackers();
@@ -380,3 +408,99 @@ final refreshNotifierProvider = StateProvider<int>((ref) => 0);
 void refreshAllData(WidgetRef ref) {
   ref.read(refreshNotifierProvider.notifier).state++;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AI/ML SEPSIS PREDICTION PROVIDERS
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Provider for the Sepsis AI Service instance
+final sepsisAIServiceProvider = Provider<SepsisAIService>((ref) {
+  return SepsisAIService();
+});
+
+/// Provider for AI sepsis prediction for a specific patient
+final sepsisPredictionProvider = Provider.family<SepsisPrediction?, String>((
+  ref,
+  patientId,
+) {
+  final patient = ref.watch(patientProvider(patientId));
+  final latestVitals = ref.watch(latestVitalSignsProvider(patientId));
+  final vitalHistory = ref.watch(vitalSignsInWindowProvider(patientId));
+  final aiService = ref.watch(sepsisAIServiceProvider);
+
+  if (patient == null || latestVitals == null) {
+    return null;
+  }
+
+  return aiService.predictSepsisRisk(
+    patient: patient,
+    currentVitals: latestVitals,
+    vitalHistory: vitalHistory.isNotEmpty ? vitalHistory : null,
+  );
+});
+
+/// Provider for qSOFA score for a specific patient
+final qsofaProvider = Provider.family<QSofaResult?, String>((
+  ref,
+  patientId,
+) {
+  final latestVitals = ref.watch(latestVitalSignsProvider(patientId));
+  final aiService = ref.watch(sepsisAIServiceProvider);
+
+  if (latestVitals == null) {
+    return null;
+  }
+
+  return aiService.calculateQSOFA(latestVitals);
+});
+
+/// Provider for SOFA score for a specific patient
+final sofaProvider = Provider.family<SofaResult?, String>((
+  ref,
+  patientId,
+) {
+  final patient = ref.watch(patientProvider(patientId));
+  final latestVitals = ref.watch(latestVitalSignsProvider(patientId));
+  final aiService = ref.watch(sepsisAIServiceProvider);
+
+  if (patient == null || latestVitals == null) {
+    return null;
+  }
+
+  return aiService.calculateSOFA(latestVitals, patient);
+});
+
+/// Provider for detected anomalies for a specific patient
+final anomaliesProvider = Provider.family<List<VitalAnomaly>, String>((
+  ref,
+  patientId,
+) {
+  final latestVitals = ref.watch(latestVitalSignsProvider(patientId));
+  final vitalHistory = ref.watch(vitalSignsInWindowProvider(patientId));
+  final aiService = ref.watch(sepsisAIServiceProvider);
+
+  if (latestVitals == null) {
+    return [];
+  }
+
+  return aiService.detectAnomalies(
+    latestVitals,
+    vitalHistory.isNotEmpty ? vitalHistory : null,
+  );
+});
+
+/// Provider for AI model information
+final aiModelInfoProvider = Provider<AIModelInfo>((ref) {
+  final aiService = ref.watch(sepsisAIServiceProvider);
+  return aiService.modelInfo;
+});
+
+/// Provider for high-risk patients identified by AI
+final aiHighRiskPatientsProvider = Provider<List<Patient>>((ref) {
+  final patients = ref.watch(patientsProvider);
+
+  return patients.where((patient) {
+    final prediction = ref.watch(sepsisPredictionProvider(patient.id));
+    return prediction != null && prediction.requiresAttention;
+  }).toList();
+});
